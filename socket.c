@@ -17,11 +17,10 @@
 
 
 
-void SocketHandleReceivedEvent(struct Event ev){
-	printf("Received something\n");
-
-}
-
+//void SocketOnEventReceived(struct Event ev){
+//	printf("Received something\n");
+//
+//}
 
 
 
@@ -82,7 +81,7 @@ void* SocketThread(void* args){
 			char buffer[32];
 			int nReceivedBytes=recv(sock->client, buffer, sizeof(buffer), MSG_WAITALL);
 			if(nReceivedBytes>0){
-				SocketHandleReceivedEvent(*((struct Event*)(buffer)));
+				SocketOnEventReceived(*((struct Event*)(buffer)));
 			}
 			else
 				break;
@@ -116,7 +115,24 @@ int SocketInit(const char* server){
 }
 
 
+void SocketStart(){
+	term = 0;
 
+	int created = pthread_create(&sockThreadTcp, NULL, SocketThread, sockcsTcp);
+	if(created<0){
+		printf("\e[1;31;43mUnable to start TCP socket thread\e[m");
+	}
+}
+
+void SocketClose(){
+	printf("\e[33mClosing sockets\e[m\n");
+	CloseSockCS(sockcsTcp);
+
+	printf("\e[33mSockets closed\e[m\n");
+
+	if(sockThreadTcp!=0)
+		term = 1;
+}
 
 
 float ConvertToBatteryValue(uint64_t data[2]){
@@ -133,10 +149,33 @@ double ConvertToWindDirValue(uint64_t data[2]){
 double ConvertToRollValue(uint64_t data[2]){
 	return 360*(data[0]/UINT64_MAX)-180;
 }
-GpsCoord ConvertToGpsValue(uint64_t data[2]){
+struct GpsCoord ConvertToGpsValue(uint64_t data[2]){
 	struct GpsCoord ret = {
 		(180.0*(data[0]/UINT64_MAX))-90.0,
 		(380.0*(data[1]/UINT64_MAX))-180.0
 	};
 	return ret;
+}
+
+
+void SocketSendEvent(struct Event ev){
+	if(sockcsTcp->client>=0)
+		send(sockcsTcp->client, &ev, sizeof(ev), MSG_DONTWAIT);
+}
+
+void SocketSendSail(unsigned short value){
+	struct Event ev = {
+		DEVICE_ID_SAIL,
+		{value, 0}
+	};
+	SocketSendEvent(ev);
+}
+
+
+void SocketSendHelm(float value){
+	struct Event ev = {
+		DEVICE_ID_HELM,
+		{(value+45.0)*(UINT64_MAX/90.0), 0}
+	};
+	SocketSendEvent(ev);
 }

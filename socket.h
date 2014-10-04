@@ -22,7 +22,7 @@ struct Event{
 	@brief Cette fonction est appelée quand un event est reçu
 	@warning DOIT être réécrite dans le .c
 */
-void SocketHandleReceivedEvent(struct Event ev);
+void SocketOnEventReceived(struct Event ev);
 
 
 /**
@@ -39,7 +39,7 @@ void SocketClose();
 /**
 	@brief Demarre la gestion parallèle des données recues par le serveur
 */
-void SocketHandleReception();
+void SocketStart();
 
 /**
 	@brief Envoi un évènement à l'intelligence
@@ -50,12 +50,12 @@ void SocketSendEvent(struct Event ev);
 /**
 	@brief Envoi une commande de tension voile (de 0 à 255)
 */
-void SendSail(unsigned short value);
+void SocketSendSail(unsigned short value);
 
 /**
 	@brief Envoi une commande d'orientation barre (de -45° à 45°)
 */
-void SendHelm(float value);
+void SocketSendHelm(float value);
 
 
 struct GpsCoord{
