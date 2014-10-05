@@ -1,18 +1,38 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
 
 #include "socket.h"
 
 
 void SocketOnEventReceived(struct Event ev){
 	printf("Received something\n");
+	switch(ev.id){
+		case DEVICE_ID_BATTERY: 	printf("Battery=%fv\n", ConvertToBatteryValue(ev.data)); break;
+		case DEVICE_ID_COMPASS: 	printf("Compass=%f°\n", ConvertToCompassValue(ev.data)); break;
+		case DEVICE_ID_GPS: 		printf("GPS=%.8f° ; %.8f°\n", ConvertToGpsValue(ev.data).lat, ConvertToGpsValue(ev.data).lon); break;
+		case DEVICE_ID_ROLL: 		printf("Roll=%f°\n", ConvertToRollValue(ev.data)); break;
+		case DEVICE_ID_WINDDIR: 	printf("Wind=%f°\n", ConvertToWindDirValue(ev.data)); break;
 
+		default: printf("\e[1;33mUnhandled device id=%d\e[m\n", ev.id);
+	}
 }
 
-int main()
+int main(int argc, char** argv)
 {
+	char* addr;
+	if(argc==2){
+		addr = argv[1];
+	}
+	else{
+		printf("Usage: ./tcpapi server_address\n");
+		return -1;
+	}
 
-	int error = SocketInit("127.0.0.1");
+	srand(time(NULL));
+
+	int error = SocketInit(addr);
 	if(error==0){
 
 		//Start client handling thread
@@ -23,11 +43,19 @@ int main()
 
 		//Main loop
 		while(running){
+
 			sleep(1);
 
-			SocketSendHelm(5.0);
-
-
+			switch(rand()%4){
+				case 0:
+					SocketSendHelm(rand()%900 / 10.0 - 45.0);
+					printf("Sent helm value\n");
+					break;
+				case 1:
+					SocketSendSail(rand()%256);
+					printf("Sent sail value\n");
+					break;
+			}
 		}
 
 		//Close sockets

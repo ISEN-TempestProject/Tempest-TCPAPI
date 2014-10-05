@@ -12,97 +12,93 @@
 #include <errno.h>
 
 
-
-
-
-
-
-//void SocketOnEventReceived(struct Event ev){
-//	printf("Received something\n");
-//
-//}
-
-
-
-
-
-
-
-
-
-//===================================================================
-
 #define UINT64_MAX (__UINT64_C(18446744073709551615))
 
+uint64_t htonll(uint64_t hll){
+	if(htons(42)!=42){
+		return (((uint64_t) htonl(hll)) << 32) + htonl(hll >> 32);
+	}
+	else
+		return hll;
+}
+uint64_t ntohll(uint64_t nll){
+	if(htons(42)!=42){
+		return (((uint64_t) ntohl(nll)) << 32) + ntohl(nll >> 32);
+	}
+	else
+		return nll;
+}
+uint8_t htonb(uint8_t hb){
+	if(htons(42)!=42){
+		return htons((uint16_t)hb)>>8;
+	}
+	else
+		return hb;
+}
+uint8_t ntohb(uint8_t nb){
+	if(htons(42)!=42){
+		return ntohs((uint16_t)nb)>>8;
+	}
+	else
+		return nb;
+}
 
 int term;
 
-struct sockcs{
-	int type;
-	int client;
-	int server;
-};
 
-struct sockcs* sockcsTcp=NULL;
+int sockTcp=-1;
 pthread_t sockThreadTcp=0;
 struct sockaddr_in sockaddrTcp;
 
 
-void CloseSockCS(struct sockcs* sock){
-	if(sock!=NULL){
-		if(sock->client>=0)
-			close(sock->client);
-		if(sock->server>=0)
-			close(sock->server);
-
-		free(sock);
-	}
+void CloseSockCS(int sock){
+	if(sockTcp>=0)
+		close(sockTcp);
 }
 
 
-void* SocketThread(void* args){
-	struct sockcs* sock = (struct sockcs*)args;
+void* SocketThread(){
+	printf("\e[32m%s:%d\e[m\n", __PRETTY_FUNCTION__, __LINE__);
 
 	while(!term){
-		//On attend qu'un client se connecte au serveur
-		printf("\e[32mWaiting for client on %s socket...\e[m\n", sock->type==AF_UNIX?"UNIX":"TCP");
-		sock->client = accept(sock->server, NULL, NULL);
-		if(sock->client<0){
-			if(term) break;
-			printf("\e[1;33mAccept error on %s socket\e[m\n", sock->type==AF_UNIX?"UNIX":"TCP");
-			continue;
+
+		printf("\e[32mConnection to server...\e[m\n");
+		if(connect(sockTcp, &sockaddrTcp, sizeof(sockaddrTcp))<0){
+			printf("\e[1;33mSocket connection error %d\e[m\n", errno);
 		}
-		printf("\e[32mClient is connected on %s socket\e[m\n", sock->type==AF_UNIX?"UNIX":"TCP");
+
+		printf("\e[32mConnected to server\e[m\n");
 
 		//On lit ce qu'il raconte
 		while(!term){
 
 			//Réception des données
-			char buffer[32];
-			int nReceivedBytes=recv(sock->client, buffer, sizeof(buffer), MSG_WAITALL);
+			char buffer[sizeof(struct Event)];
+			int nReceivedBytes=recv(sockTcp, buffer, sizeof(buffer), MSG_WAITALL);
 			if(nReceivedBytes>0){
-				SocketOnEventReceived(*((struct Event*)(buffer)));
+				struct Event* ev = ((struct Event*)(buffer));
+				ev->id = ntohb(ev->id);
+				ev->data[0] = ntohll(ev->data[0]);
+				ev->data[1] = ntohll(ev->data[1]);
+				SocketOnEventReceived(*ev);
 			}
 			else
 				break;
 		}
-		sock->client = -1;
-		printf("\e[1;33mClient closed connection on %s socket\e[m\n", sock->type==AF_UNIX?"UNIX":"TCP");
+		sockTcp = -1;
+		printf("\e[1;33mDisconnected from server\e[m\n");
 	}
 	return 0;
 }
 
 
 int SocketInit(const char* server){
-	//TCP/IP SOCKET
-	sockcsTcp = (struct sockcs*)malloc(sizeof(struct sockcs));
-	sockcsTcp->type = AF_INET;
 
 	//Init de la socket
-	sockcsTcp->client = socket(AF_INET, SOCK_STREAM, 0);
-	if(sockcsTcp->client < 0){
+	sockTcp = socket(AF_INET, SOCK_STREAM, 0);
+	if(sockTcp < 0){
 		printf("\e[1;31;43mUnable to init TCP socket: err %d\e[m\n", errno);
-		return sockcsTcp->client;
+		return sockTcp;
 	}
 
 	//Préparation de l'adresse côté serveur
@@ -118,20 +114,18 @@ int SocketInit(const char* server){
 void SocketStart(){
 	term = 0;
 
-	int created = pthread_create(&sockThreadTcp, NULL, SocketThread, sockcsTcp);
+	int created = pthread_create(&sockThreadTcp, NULL, SocketThread, NULL);
 	if(created<0){
-		printf("\e[1;31;43mUnable to start TCP socket thread\e[m");
+		printf("\e[1;31;43mUnable to start TCP socket thread\e[m\n");
 	}
 }
 
 void SocketClose(){
 	printf("\e[33mClosing sockets\e[m\n");
-	CloseSockCS(sockcsTcp);
+	CloseSockCS(sockTcp);
+	term = 1;
 
 	printf("\e[33mSockets closed\e[m\n");
-
-	if(sockThreadTcp!=0)
-		term = 1;
 }
 
 
@@ -159,14 +153,20 @@ struct GpsCoord ConvertToGpsValue(uint64_t data[2]){
 
 
 void SocketSendEvent(struct Event ev){
-	if(sockcsTcp->client>=0)
-		send(sockcsTcp->client, &ev, sizeof(ev), MSG_DONTWAIT);
+	if(sockTcp>=0){
+		//Convert TCP data to network bit order
+		ev.id = htonb(ev.id);
+		ev.data[0] = htonll(ev.data[0]);
+		ev.data[1] = htonll(ev.data[1]);
+		//Send
+		send(sockTcp, &ev, sizeof(ev), MSG_DONTWAIT);
+	}
 }
 
 void SocketSendSail(unsigned short value){
 	struct Event ev = {
 		DEVICE_ID_SAIL,
-		{value, 0}
+		{htonll(value), 0}
 	};
 	SocketSendEvent(ev);
 }
@@ -175,7 +175,7 @@ void SocketSendSail(unsigned short value){
 void SocketSendHelm(float value){
 	struct Event ev = {
 		DEVICE_ID_HELM,
-		{(value+45.0)*(UINT64_MAX/90.0), 0}
+		{htonll((value+45.0)*(UINT64_MAX/90.0)), 0}
 	};
 	SocketSendEvent(ev);
 }
