@@ -7,15 +7,14 @@
 
 
 void SocketOnEventReceived(struct Event ev){
-	printf("Received something\n");
 	switch(ev.id){
-		case DEVICE_ID_BATTERY: 	printf("Battery=%fv\n", ConvertToBatteryValue(ev.data)); break;
-		case DEVICE_ID_COMPASS: 	printf("Compass=%f°\n", ConvertToCompassValue(ev.data)); break;
-		case DEVICE_ID_GPS: 		printf("GPS=%.8f° ; %.8f°\n", ConvertToGpsValue(ev.data).lat, ConvertToGpsValue(ev.data).lon); break;
-		case DEVICE_ID_ROLL: 		printf("Roll=%f°\n", ConvertToRollValue(ev.data)); break;
-		case DEVICE_ID_WINDDIR: 	printf("Wind=%f°\n", ConvertToWindDirValue(ev.data)); break;
+		case DEVICE_ID_BATTERY: 	printf("\t\tReceived Battery=%fv\n", ConvertToBatteryValue(ev.data)); break;
+		case DEVICE_ID_COMPASS: 	printf("\t\tReceived Compass=%f°\n", ConvertToCompassValue(ev.data)); break;
+		case DEVICE_ID_GPS: 		printf("\t\tReceived GPS=%.8f° ; %.8f°\n", ConvertToGpsValue(ev.data).lat, ConvertToGpsValue(ev.data).lon); break;
+		case DEVICE_ID_ROLL: 		printf("\t\tReceived Roll=%f°\n", ConvertToRollValue(ev.data)); break;
+		case DEVICE_ID_WINDDIR: 	printf("\t\tReceived Wind=%f°\n", ConvertToWindDirValue(ev.data)); break;
 
-		default: printf("\e[1;33mUnhandled device id=%d\e[m\n", ev.id);
+		default: printf("\t\tReceived \e[1;33mUnhandled device id=%d\e[m\n", ev.id);
 	}
 }
 
@@ -48,13 +47,19 @@ int main(int argc, char** argv)
 
 			switch(rand()%4){
 				case 0:
-					SocketSendHelm(rand()%900 / 10.0 - 45.0);
-					printf("Sent helm value\n");
+				{
+					float fValue = rand()%900 / 10.0 - 45.0;
+					SocketSendHelm(fValue);
+					printf("Sending Helm=%f\n", fValue);
 					break;
+				}
 				case 1:
-					SocketSendSail(rand()%256);
-					printf("Sent sail value\n");
+				{
+					int nValue = rand()%256;
+					SocketSendSail(nValue);
+					printf("Sending Sail=%d\n", nValue);
 					break;
+				}
 			}
 		}
 

@@ -130,23 +130,23 @@ void SocketClose(){
 
 
 float ConvertToBatteryValue(uint64_t data[2]){
-	return 10*(data[0]/UINT64_MAX);
+	return 10*(data[0]/(double)UINT64_MAX);
 }
 
 
 double ConvertToCompassValue(uint64_t data[2]){
-	return 360*(data[0]/UINT64_MAX);
+	return 360.0*(data[0]/(double)UINT64_MAX);
 }
 double ConvertToWindDirValue(uint64_t data[2]){
-	return 360*(data[0]/UINT64_MAX)-180;
+	return 360.0*(data[0]/(double)UINT64_MAX)-180.0;
 }
 double ConvertToRollValue(uint64_t data[2]){
-	return 360*(data[0]/UINT64_MAX)-180;
+	return 360.0*(data[0]/(double)UINT64_MAX)-180.0;
 }
 struct GpsCoord ConvertToGpsValue(uint64_t data[2]){
 	struct GpsCoord ret = {
-		(180.0*(data[0]/UINT64_MAX))-90.0,
-		(380.0*(data[1]/UINT64_MAX))-180.0
+		(180.0*(data[0]/(double)UINT64_MAX))-90.0,
+		(380.0*(data[1]/(double)UINT64_MAX))-180.0
 	};
 	return ret;
 }
