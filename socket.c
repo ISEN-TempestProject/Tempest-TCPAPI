@@ -50,6 +50,8 @@ int sockTcp=-1;
 pthread_t sockThreadTcp=0;
 struct sockaddr_in sockaddrTcp;
 
+int bConnected = 0;
+
 
 void CloseSockCS(int sock){
 	if(sockTcp>=0)
@@ -58,17 +60,17 @@ void CloseSockCS(int sock){
 
 
 void* SocketThread(){
-	printf("\e[32m%s:%d\e[m\n", __PRETTY_FUNCTION__, __LINE__);
-
+	//#define	ECONNREFUSED	111	/* Connection refused */
+	//#define	EBADF		 9	/* Bad file number */
 	while(!term){
 
 		printf("\e[32mAttempting connection to server...\e[m\n");
 		if(connect(sockTcp, &sockaddrTcp, sizeof(sockaddrTcp))<0){
 			printf("\e[1;33mSocket connection error %d\e[m\n", errno);
-			close(sockTcp);
 		}
 		else
 		{
+			bConnected = 1;
 			printf("\e[32mConnected to server\e[m\n");
 
 			//On lit ce qu'il raconte
@@ -88,10 +90,9 @@ void* SocketThread(){
 					break;
 			}
 
+			bConnected = 0;
 			printf("\e[1;33mDisconnected from server\e[m\n");
 		}
-		sockTcp = -1;
-
 		sleep(1);
 
 	}
@@ -160,7 +161,7 @@ struct GpsCoord ConvertToGpsValue(uint64_t data[2]){
 
 
 void SocketSendEvent(struct Event ev){
-	if(sockTcp>=0){
+	if(sockTcp>=0 && bConnected){
 		//Convert TCP data to network bit order
 		ev.id = htonb(ev.id);
 		ev.data[0] = htonll(ev.data[0]);
