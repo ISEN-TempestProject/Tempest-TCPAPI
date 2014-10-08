@@ -62,31 +62,38 @@ void* SocketThread(){
 
 	while(!term){
 
-		printf("\e[32mConnection to server...\e[m\n");
+		printf("\e[32mAttempting connection to server...\e[m\n");
 		if(connect(sockTcp, &sockaddrTcp, sizeof(sockaddrTcp))<0){
 			printf("\e[1;33mSocket connection error %d\e[m\n", errno);
+			close(sockTcp);
 		}
+		else
+		{
+			printf("\e[32mConnected to server\e[m\n");
 
-		printf("\e[32mConnected to server\e[m\n");
+			//On lit ce qu'il raconte
+			while(!term){
 
-		//On lit ce qu'il raconte
-		while(!term){
-
-			//Réception des données
-			char buffer[sizeof(struct Event)];
-			int nReceivedBytes=recv(sockTcp, buffer, sizeof(buffer), MSG_WAITALL);
-			if(nReceivedBytes>0){
-				struct Event* ev = ((struct Event*)(buffer));
-				ev->id = ntohb(ev->id);
-				ev->data[0] = ntohll(ev->data[0]);
-				ev->data[1] = ntohll(ev->data[1]);
-				SocketOnEventReceived(*ev);
+				//Réception des données
+				char buffer[sizeof(struct Event)];
+				int nReceivedBytes=recv(sockTcp, buffer, sizeof(buffer), MSG_WAITALL);
+				if(nReceivedBytes>0){
+					struct Event* ev = ((struct Event*)(buffer));
+					ev->id = ntohb(ev->id);
+					ev->data[0] = ntohll(ev->data[0]);
+					ev->data[1] = ntohll(ev->data[1]);
+					SocketOnEventReceived(*ev);
+				}
+				else
+					break;
 			}
-			else
-				break;
+
+			printf("\e[1;33mDisconnected from server\e[m\n");
 		}
 		sockTcp = -1;
-		printf("\e[1;33mDisconnected from server\e[m\n");
+
+		sleep(1);
+
 	}
 	return 0;
 }
