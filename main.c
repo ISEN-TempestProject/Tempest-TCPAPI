@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 #include <time.h>
 
 #include "socket.h"
@@ -18,8 +19,23 @@ void SocketOnEventReceived(struct Event ev){
 	}
 }
 
+int running=1;
+void term(int signum)
+{
+    printf("Received SIGINT, exiting...\n");
+    running = 0;
+}
+
 int main(int argc, char** argv)
 {
+
+	//Setup interrupt signal handling
+	struct sigaction action;
+	memset(&action, 0, sizeof(struct sigaction));
+	action.sa_handler = term;
+	sigaction(SIGINT, &action, NULL);
+
+
 	char* addr;
 	if(argc==2){
 		addr = argv[1];
@@ -37,8 +53,6 @@ int main(int argc, char** argv)
 		//Start client handling thread
 		SocketStart();
 
-
-		int running=1;
 
 		//Main loop
 		while(running){

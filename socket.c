@@ -43,8 +43,7 @@ uint8_t ntohb(uint8_t nb){
 		return nb;
 }
 
-int term;
-
+int sockterm = 0;
 
 int sockTcp=-1;
 pthread_t sockThreadTcp=0;
@@ -62,7 +61,7 @@ void CloseSockCS(int sock){
 void* SocketThread(){
 	//#define	ECONNREFUSED	111	/* Connection refused */
 	//#define	EBADF		 9	/* Bad file number */
-	while(!term){
+	while(!sockterm){
 
 		printf("\e[32mAttempting connection to server...\e[m\n");
 		if(connect(sockTcp, &sockaddrTcp, sizeof(sockaddrTcp))<0){
@@ -74,7 +73,7 @@ void* SocketThread(){
 			printf("\e[32mConnected to server\e[m\n");
 
 			//On lit ce qu'il raconte
-			while(!term){
+			while(!sockterm){
 
 				//Réception des données
 				char buffer[sizeof(struct Event)];
@@ -90,6 +89,7 @@ void* SocketThread(){
 					break;
 			}
 
+			close(sockTcp);
 			bConnected = 0;
 			printf("\e[1;33mDisconnected from server\e[m\n");
 		}
@@ -120,7 +120,7 @@ int SocketInit(const char* server){
 
 
 void SocketStart(){
-	term = 0;
+	sockterm = 0;
 
 	int created = pthread_create(&sockThreadTcp, NULL, SocketThread, NULL);
 	if(created<0){
@@ -131,7 +131,7 @@ void SocketStart(){
 void SocketClose(){
 	printf("\e[33mClosing sockets\e[m\n");
 	CloseSockCS(sockTcp);
-	term = 1;
+	sockterm = 1;
 
 	printf("\e[33mSockets closed\e[m\n");
 }
