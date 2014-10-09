@@ -14,6 +14,7 @@ void SocketOnEventReceived(struct Event ev){
 		case DEVICE_ID_GPS: 		printf("\t\tReceived GPS=%.8f° ; %.8f°\n", ConvertToGpsValue(ev.data).lat, ConvertToGpsValue(ev.data).lon); break;
 		case DEVICE_ID_ROLL: 		printf("\t\tReceived Roll=%f°\n", ConvertToRollValue(ev.data)); break;
 		case DEVICE_ID_WINDDIR: 	printf("\t\tReceived Wind=%f°\n", ConvertToWindDirValue(ev.data)); break;
+		case DEVICE_ID_TURNSPEED: 	printf("\t\tReceived TurnSpeed=%f°\n", ConvertToTurnSpeedValue(ev.data)); break;
 
 		default: printf("\t\tReceived \e[1;33mUnhandled device id=%d\e[m\n", ev.id);
 	}

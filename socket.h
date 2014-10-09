@@ -11,6 +11,7 @@
 #define DEVICE_ID_WINDDIR 5
 #define DEVICE_ID_COMPASS 6
 #define DEVICE_ID_BATTERY 7
+#define DEVICE_ID_TURNSPEED 8
 
 struct __attribute__((packed)) Event{
 	uint8_t id;
@@ -90,6 +91,12 @@ double ConvertToCompassValue(uint64_t data[2]);
 	@return voltage Entre 0 et 18 volts
 **/
 float ConvertToBatteryValue(uint64_t data[2]);
+
+
+/**
+	@return Vitesse de rotation entre -360 et 360 degrés
+**/
+float ConvertToTurnSpeedValue(uint64_t data[2]);
 
 
 #endif // SOCKET_H_INCLUDED

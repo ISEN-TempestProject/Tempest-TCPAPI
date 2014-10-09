@@ -158,6 +158,10 @@ struct GpsCoord ConvertToGpsValue(uint64_t data[2]){
 	};
 	return ret;
 }
+double ConvertToTurnSpeedValue(uint64_t data[2]){
+	return 720.0*(data[0]/(double)UINT64_MAX)-360.0;
+}
+
 
 
 void SocketSendEvent(struct Event ev){
